@@ -90,12 +90,23 @@ export default function LoginForm() {
               minLength={6}
             />
           </div>
+          
           <button
             type="submit"
             className="w-full bg-green-800 text-white py-2.5 px-4 rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200"
           >
             Iniciar Sesión
           </button>
+          
+          <div className="text-center mt-3">
+            <a 
+              href="/forgot-password" 
+              className="text-sm text-green-700 hover:text-green-900 hover:underline"
+            >
+              ¿Olvidaste tu contraseña?
+            </a>
+          </div>
+          
           <div className="mt-3 text-center">
             <p className="text-sm text-gray-600">
               ¿No tienes cuenta?{' '}
