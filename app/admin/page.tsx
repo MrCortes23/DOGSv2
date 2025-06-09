@@ -13,6 +13,8 @@ const ClientesTab = dynamic(() => import('@/components/admin/ClientesTab'), { ss
 const CitasTab = dynamic(() => import('@/components/admin/CitasTab'), { ssr: false });
 const PerrosTab = dynamic(() => import('@/components/admin/PerrosTab'), { ssr: false });
 const FacturasTab = dynamic(() => import('@/components/admin/FacturasTab'), { ssr: false });
+const RazasTab = dynamic(() => import('@/components/admin/RazasTab'), { ssr: false });
+const EnfermedadesTab = dynamic(() => import('@/components/admin/EnfermedadesTab'), { ssr: false });
 
 interface UserData {
   id: string;
@@ -93,7 +95,7 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs>
-        <TabsList className="grid w-full grid-cols-4 mb-6">
+        <TabsList className="grid w-full grid-cols-6 mb-6">
           <TabsTrigger 
             onClick={() => setActiveTab('clientes')}
             data-state={activeTab === 'clientes' ? 'active' : 'inactive'}
@@ -113,17 +115,32 @@ export default function AdminDashboard() {
             Citas
           </TabsTrigger>
           <TabsTrigger 
-            onClick={() => setActiveTab('facturas')}
-            data-state={activeTab === 'facturas' ? 'active' : 'inactive'}
+            onClick={() => setActiveTab('facturacion')}
+            data-state={activeTab === 'facturacion' ? 'active' : 'inactive'}
           >
-            Facturas
+            Facturación
+          </TabsTrigger>
+          <TabsTrigger 
+            onClick={() => setActiveTab('razas')}
+            data-state={activeTab === 'razas' ? 'active' : 'inactive'}
+          >
+            Razas
+          </TabsTrigger>
+          <TabsTrigger 
+            onClick={() => setActiveTab('enfermedades')}
+            data-state={activeTab === 'enfermedades' ? 'active' : 'inactive'}
+          >
+            Enfermedades
           </TabsTrigger>
         </TabsList>
-        <div className="mt-6">
+
+        <div className="pt-4">
           {activeTab === 'clientes' && <ClientesTab />}
           {activeTab === 'mascotas' && <PerrosTab />}
           {activeTab === 'citas' && <CitasTab />}
-          {activeTab === 'facturas' && <FacturasTab />}
+          {activeTab === 'facturacion' && <FacturasTab />}
+          {activeTab === 'razas' && <RazasTab />}
+          {activeTab === 'enfermedades' && <EnfermedadesTab />}
         </div>
       </Tabs>
     </div>

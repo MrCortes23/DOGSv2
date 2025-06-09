@@ -65,6 +65,7 @@ export async function GET() {
       }, { status: 500 })
     }
 
+    // Primero obtenemos los perros
     const perrosRes = await pool.query(
       `
         SELECT 
@@ -73,23 +74,52 @@ export async function GET() {
           p.nombre,
           p.edad,
           p.sexo,
-          pr.id_raza_fk,
-          r.tipo_de_raza as raza,
           p.foto_data
         FROM perro p
-        LEFT JOIN perro_raza pr ON p.id_perro_pk = pr.id_perro_fk
-        LEFT JOIN raza r ON pr.id_raza_fk = r.id_raza_pk
         WHERE p.id_cliente_fk = $1
         ORDER BY p.nombre ASC
       `,
       [userData.id]
     )
 
-    console.log('Perros encontrados:', perrosRes.rows)
+    // Luego obtenemos las razas para cada perro
+    const perrosConRazas = await Promise.all(perrosRes.rows.map(async (perro) => {
+      const razasRes = await pool.query(
+        `
+          SELECT r.id_raza_pk, r.tipo_de_raza 
+          FROM raza r
+          JOIN perro_raza pr ON r.id_raza_pk = pr.id_raza_fk
+          WHERE pr.id_perro_fk = $1
+        `,
+        [perro.id_perro_pk]
+      )
+
+      // Obtenemos las enfermedades del perro
+      const enfermedadesRes = await pool.query(
+        `
+          SELECT e.id_enfermedad_pk, e.tipo_de_enfermedad 
+          FROM enfermedades e
+          JOIN perro_enfermedad pe ON e.id_enfermedad_pk = pe.id_enfermedad_fk
+          WHERE pe.id_perro_fk = $1
+        `,
+        [perro.id_perro_pk]
+      )
+
+      return {
+        ...perro,
+        razas: razasRes.rows,
+        enfermedades: enfermedadesRes.rows,
+        // Mantenemos la compatibilidad con el código existente
+        raza: razasRes.rows[0]?.tipo_de_raza || null,
+        enfermedad: enfermedadesRes.rows[0]?.tipo_de_enfermedad || null
+      }
+    }))
+
+    console.log('Perros encontrados:', perrosConRazas)
 
     return NextResponse.json({
       success: true,
-      perros: perrosRes.rows
+      perros: perrosConRazas
     })
   } catch (error) {
     console.error('Error en la API:', error)
@@ -125,7 +155,8 @@ export async function POST(request: Request) {
     const edad = formData.get('edad') as string
     const sexo = formData.get('sexo') as string
     const id_raza_fk = formData.get('id_raza_fk') as string
-    const foto = formData.get('foto') as File
+    const id_enfermedad_fk = formData.get('id_enfermedad_fk') as string | null
+    const foto = formData.get('foto') as File | null
 
     if (!nombre || !edad || !sexo || !id_raza_fk) {
       return NextResponse.json({
@@ -158,28 +189,60 @@ export async function POST(request: Request) {
       foto_data = Buffer.from(await foto.arrayBuffer())
     }
 
-    // Primero insertamos el perro
-    const perroResult = await pool.query(
-      `
-        INSERT INTO perro (nombre, edad, sexo, foto_data, id_cliente_fk)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id_perro_pk
-      `,
-      [nombre, edadNum.toString(), sexo, foto_data, userData.id]
-    )
+    let idPerro: number
+    
+    // Iniciar transacción
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
 
-    const idPerro = perroResult.rows[0].id_perro_pk
+      // Primero insertamos el perro
+      const perroResult = await client.query(
+        `
+          INSERT INTO perro (nombre, edad, sexo, foto_data, id_cliente_fk)
+          VALUES ($1, $2, $3, $4, $5)
+          RETURNING id_perro_pk
+        `,
+        [
+          nombre, 
+          edadNum.toString(), 
+          sexo, 
+          foto_data, 
+          userData.id
+        ]
+      )
+      
+      idPerro = perroResult.rows[0].id_perro_pk
 
-    // Luego insertamos en la tabla de relación
-    await pool.query(
-      `
-        INSERT INTO perro_raza (id_perro_fk, id_raza_fk)
-        VALUES ($1, $2)
-      `,
-      [idPerro, idRazaNum]
-    )
+      // Insertar en la tabla de relación con la raza
+      await client.query(
+        `
+          INSERT INTO perro_raza (id_perro_fk, id_raza_fk)
+          VALUES ($1, $2)
+        `,
+        [idPerro, idRazaNum]
+      )
 
-    // Finalmente obtenemos el perro completo con su raza
+      // Si se seleccionó una enfermedad, insertar en la tabla perro_enfermedad
+      if (id_enfermedad_fk) {
+        await client.query(
+          `
+            INSERT INTO perro_enfermedad (id_perro_fk, id_enfermedad_fk, fecha_diagnostico)
+            VALUES ($1, $2, CURRENT_DATE)
+          `,
+          [idPerro, parseInt(id_enfermedad_fk)]
+        )
+      }
+
+      await client.query('COMMIT')
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
+
+    // Finalmente obtenemos el perro completo con su raza y enfermedad
     const perroFinal = await pool.query(
       `
         SELECT 
@@ -190,10 +253,14 @@ export async function POST(request: Request) {
           p.sexo,
           pr.id_raza_fk,
           r.tipo_de_raza as raza,
-          p.foto_data
+          p.foto_data,
+          e.id_enfermedad_pk,
+          e.tipo_de_enfermedad as enfermedad
         FROM perro p
         LEFT JOIN perro_raza pr ON p.id_perro_pk = pr.id_perro_fk
         LEFT JOIN raza r ON pr.id_raza_fk = r.id_raza_pk
+        LEFT JOIN perro_enfermedad pe ON p.id_perro_pk = pe.id_perro_fk
+        LEFT JOIN enfermedades e ON pe.id_enfermedad_fk = e.id_enfermedad_pk
         WHERE p.id_perro_pk = $1
       `,
       [idPerro]
@@ -319,7 +386,10 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const client = await pool.connect()
+  
   try {
+    // Verificar autenticación
     const userData = await getUserDataFromCookie()
     if (!userData) {
       return NextResponse.json({
@@ -340,8 +410,33 @@ export async function DELETE(request: Request) {
       }, { status: 400 })
     }
 
-    // Primero eliminamos las facturas relacionadas
-    await pool.query(
+    // Iniciar transacción
+    await client.query('BEGIN')
+
+    // 1. Verificar que el perro pertenece al cliente
+    const perroResult = await client.query(
+      `SELECT id_perro_pk FROM perro WHERE id_perro_pk = $1 AND id_cliente_fk = $2`,
+      [id, userData.id]
+    )
+
+    if (perroResult.rows.length === 0) {
+      throw new Error('Perro no encontrado o no tienes permiso para eliminarlo')
+    }
+
+    // 2. Eliminar registros relacionados en perro_enfermedad
+    await client.query(
+      `DELETE FROM perro_enfermedad WHERE id_perro_fk = $1`,
+      [id]
+    )
+
+    // 3. Eliminar registros relacionados en perro_raza
+    await client.query(
+      `DELETE FROM perro_raza WHERE id_perro_fk = $1`,
+      [id]
+    )
+
+    // 4. Eliminar facturas relacionadas
+    await client.query(
       `
         DELETE FROM factura 
         WHERE id_cita_fk IN (
@@ -351,51 +446,38 @@ export async function DELETE(request: Request) {
       [id]
     )
 
-    // Luego eliminamos las citas relacionadas
-    await pool.query(
-      `
-        DELETE FROM cita 
-        WHERE id_perro_fk = $1
-      `,
+    // 5. Eliminar citas relacionadas
+    await client.query(
+      `DELETE FROM cita WHERE id_perro_fk = $1`,
       [id]
     )
 
-    // Luego eliminamos la relación
-    await pool.query(
-      `
-        DELETE FROM perro_raza 
-        WHERE id_perro_fk = $1
-      `,
+    // 6. Finalmente, eliminar el perro
+    await client.query(
+      `DELETE FROM perro WHERE id_perro_pk = $1`,
       [id]
     )
 
-    // Finalmente eliminamos el perro
-    const result = await pool.query(
-      `
-        DELETE FROM perro 
-        WHERE id_perro_pk = $1 
-        AND id_cliente_fk = $2
-        RETURNING id_perro_pk
-      `,
-      [id, userData.id]
-    )
-
-    if (result.rows.length === 0) {
-      return NextResponse.json({
-        success: false,
-        error: 'No se encontró el perro'
-      }, { status: 404 })
-    }
-
+    // Confirmar la transacción
+    await client.query('COMMIT')
+    
     return NextResponse.json({
       success: true,
-      message: 'Perro eliminado exitosamente'
+      message: 'Perro eliminado correctamente'
     })
+    
   } catch (error) {
-    console.error('Error en DELETE:', error)
+    // Revertir la transacción en caso de error
+    await client.query('ROLLBACK')
+    console.error('Error al eliminar perro:', error)
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Error desconocido'
+      error: error instanceof Error ? error.message : 'Error al eliminar el perro',
+      details: error instanceof Error ? error.stack : undefined
     }, { status: 500 })
+    
+  } finally {
+    // Liberar el cliente de la conexión
+    client.release()
   }
 }

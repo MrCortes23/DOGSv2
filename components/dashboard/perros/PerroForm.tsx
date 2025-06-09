@@ -4,21 +4,33 @@ import React from 'react'
 
 import { Raza } from './types'
 
+interface Enfermedad {
+  id_enfermedad_pk: number
+  tipo_de_enfermedad: string
+}
+
 interface PerroFormProps {
   onSubmit: (formData: FormData) => Promise<void>
   razas: Raza[]
+  enfermedades: Enfermedad[]
 }
 
-export default function PerroForm({ onSubmit, razas }: PerroFormProps) {
+export default function PerroForm({ onSubmit, razas, enfermedades = [] }: PerroFormProps) {
+  const formRef = React.useRef<HTMLFormElement>(null)
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     
+    if (!formRef.current) return
+    
     // Obtener los valores del formulario
-    const nombre = e.currentTarget.nombre.value
-    const edad = e.currentTarget.edad.value
-    const sexo = e.currentTarget.sexo.value
-    const id_raza_fk = e.currentTarget.id_raza_fk.value
-    const foto = e.currentTarget.foto.files?.[0]
+    const formData = new FormData(formRef.current)
+    const nombre = formData.get('nombre') as string
+    const edad = formData.get('edad') as string
+    const sexo = formData.get('sexo') as string
+    const id_raza_fk = formData.get('id_raza_fk') as string
+    const id_enfermedad_fk = formData.get('id_enfermedad_fk') as string | null
+    const foto = (formRef.current.elements.namedItem('foto') as HTMLInputElement)?.files?.[0]
 
     // Validar que todos los campos requeridos estén presentes
     if (!nombre || !edad || !sexo || !id_raza_fk) {
@@ -41,22 +53,30 @@ export default function PerroForm({ onSubmit, razas }: PerroFormProps) {
     }
 
     // Crear un nuevo FormData con los valores validados
-    const formData = new FormData()
-    formData.append('nombre', nombre)
-    formData.append('edad', edadNum.toString())
-    formData.append('sexo', sexo)
-    formData.append('id_raza_fk', idRazaNum.toString())
+    const submitData = new FormData()
+    submitData.append('nombre', nombre)
+    submitData.append('edad', edadNum.toString())
+    submitData.append('sexo', sexo)
+    submitData.append('id_raza_fk', idRazaNum.toString())
+    if (id_enfermedad_fk) {
+      submitData.append('id_enfermedad_fk', id_enfermedad_fk)
+    }
     if (foto) {
-      formData.append('foto', foto)
+      submitData.append('foto', foto)
     }
 
-    await onSubmit(formData)
+    await onSubmit(submitData)
+    
+    // Limpiar el formulario después de un envío exitoso
+    if (formRef.current) {
+      formRef.current.reset()
+    }
   }
 
   return (
     <div className="bg-white p-8 rounded-xl shadow-md">
       <h2 className="text-3xl font-bold text-gray-900 mb-6">Registrar Nuevo Perro</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
@@ -101,6 +121,20 @@ export default function PerroForm({ onSubmit, razas }: PerroFormProps) {
               {razas.map(raza => (
                 <option key={raza.id_raza_pk} value={raza.id_raza_pk.toString()}>
                   {raza.tipo_de_raza} ({raza.tamano})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Enfermedad (opcional)</label>
+            <select
+              name="id_enfermedad_fk"
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Sin enfermedad</option>
+              {enfermedades.map(enfermedad => (
+                <option key={enfermedad.id_enfermedad_pk} value={enfermedad.id_enfermedad_pk.toString()}>
+                  {enfermedad.tipo_de_enfermedad}
                 </option>
               ))}
             </select>

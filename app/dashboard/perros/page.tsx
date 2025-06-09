@@ -7,7 +7,7 @@ import usePerros from '@/components/dashboard/perros/usePerros'
 import { useState } from 'react'
 
 export default function Perros() {
-  const { perros, isLoading, error, registerPerro, updatePerro, deletePerro, razas } = usePerros()
+  const { perros, isLoading, error, registerPerro, updatePerro, deletePerro, razas, enfermedades } = usePerros()
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
   // Manejo de errores
@@ -55,15 +55,19 @@ export default function Perros() {
   return (
     <div className="p-8 space-y-8 ">
       <h1 className="text-3xl font-bold text-gray-900">Mis Perros</h1>
-      
-      <PerroForm onSubmit={registerPerro} razas={razas} />
-      
-      <PerrosList 
-        perros={perros} 
-        onDelete={handleDelete} 
-        onSave={handleUpdate} 
-        razas={razas}
-      />
+      <div className="space-y-8">
+        <PerroForm 
+          onSubmit={registerPerro} 
+          razas={razas} 
+          enfermedades={enfermedades} 
+        />
+        <PerrosList 
+          perros={perros} 
+          razas={razas}
+          onDelete={handleDelete} 
+          onSave={handleUpdate} 
+        />
+      </div>
     </div>
   )
 }

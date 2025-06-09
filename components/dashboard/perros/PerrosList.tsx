@@ -61,19 +61,29 @@ export default function PerrosList({ perros, onDelete, onSave, razas }: PerrosLi
                 />
               ) : (
                 <>
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">{perro.nombre}</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center text-sm">
-                      <span className="text-gray-500 mr-2">Edad:</span>
-                      <span className="font-medium text-gray-700">{perro.edad}</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <span className="text-gray-500 mr-2">Sexo:</span>
-                      <span className="font-medium text-gray-700">{perro.sexo}</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <span className="text-gray-500 mr-2">Raza:</span>
-                      <span className="font-medium text-gray-700">{perro.raza || 'Sin especificar'}</span>
+                  <div className="p-4 space-y-3">
+                    <h3 className="text-xl font-bold text-gray-900">{perro.nombre}</h3>
+                    <div className="space-y-2">
+                      <p className="text-gray-700">
+                        <span className="font-semibold">Edad:</span> {perro.edad} años
+                      </p>
+                      <p className="text-gray-700">
+                        <span className="font-semibold">Sexo:</span> {perro.sexo}
+                      </p>
+                      <p className="text-gray-700">
+                        <span className="font-semibold">Raza(s):</span>{' '}
+                        {perro.razas?.length 
+                          ? perro.razas.map((r, i, arr) => (
+                              <span key={r.id_raza_pk}>
+                                {r.tipo_de_raza}
+                                {i < arr.length - 1 ? ', ' : ''}
+                              </span>
+                            ))
+                          : perro.raza || 'No especificada'}
+                      </p>
+                      <p className="text-gray-700">
+                        <span className="font-semibold">Enfermedad:</span> {perro.enfermedad || 'Sin enfermedad'}
+                      </p>
                     </div>
                   </div>
                   <div className="mt-6 flex justify-end gap-4">

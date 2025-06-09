@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Perro, Raza } from './types'
+import { Perro, Raza, Enfermedad } from './types'
 
 interface UsePerrosReturn {
   perros: Perro[]
   razas: Raza[]
+  enfermedades: Enfermedad[]
   isLoading: boolean
   error: string | null
   registerPerro: (formData: FormData) => Promise<void>
@@ -16,6 +17,7 @@ interface UsePerrosReturn {
 export default function usePerros(): UsePerrosReturn {
   const [perros, setPerros] = useState<Perro[]>([])
   const [razas, setRazas] = useState<Raza[]>([])
+  const [enfermedades, setEnfermedades] = useState<Enfermedad[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -25,7 +27,11 @@ export default function usePerros(): UsePerrosReturn {
       setError(null)
 
       // Obtener las razas disponibles
-      const razasResponse = await fetch('/api/dashboard/razas')
+      const [razasResponse, enfermedadesResponse] = await Promise.all([
+        fetch('/api/dashboard/razas'),
+        fetch('/api/dashboard/enfermedades')
+      ])
+
       if (!razasResponse.ok) {
         throw new Error(`Error al obtener razas: ${razasResponse.status}`)
       }
@@ -34,6 +40,17 @@ export default function usePerros(): UsePerrosReturn {
         setRazas(razasData.razas)
       } else {
         throw new Error(razasData.error || 'Error desconocido al obtener razas')
+      }
+
+      // Obtener las enfermedades
+      if (!enfermedadesResponse.ok) {
+        throw new Error(`Error al obtener enfermedades: ${enfermedadesResponse.status}`)
+      }
+      const enfermedadesData = await enfermedadesResponse.json()
+      if (enfermedadesData.success) {
+        setEnfermedades(enfermedadesData.enfermedades)
+      } else {
+        throw new Error(enfermedadesData.error || 'Error desconocido al obtener enfermedades')
       }
 
       // Obtener los perros
@@ -155,10 +172,11 @@ export default function usePerros(): UsePerrosReturn {
   return {
     perros,
     razas,
+    enfermedades,
     isLoading,
     error,
     registerPerro,
     updatePerro,
-    deletePerro
+    deletePerro,
   }
 }

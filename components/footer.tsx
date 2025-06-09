@@ -108,18 +108,18 @@ export function Footer() {
               <li className="flex items-start">
                 <MapPin className="h-5 w-5 text-secondary mr-3 mt-0.5 flex-shrink-0" />
                 <span className="text-white/80 text-left">
-                  Calle Principal 123
+                  Calle 27 #5-142
                   <br />
-                  Ciudad, CP 12345
+                  Funza, Cundinamarca
                 </span>
               </li>
               <li className="flex items-center">
                 <Phone className="h-5 w-5 text-secondary mr-3 flex-shrink-0" />
-                <span className="text-white/80">(123) 456-7890</span>
+                <span className="text-white/80">(301) 8268642</span>
               </li>
               <li className="flex items-start">
                 <Mail className="h-5 w-5 text-secondary mr-3 mt-1 flex-shrink-0" />
-                <span className="text-white/80 break-all">info@dogs.com</span>
+                <span className="text-white/80 break-all">guarderiacampestredogs@gmail.com</span>
               </li>
             </ul>
           </div>
