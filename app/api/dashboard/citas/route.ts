@@ -98,49 +98,38 @@ export async function POST(request: Request) {
       }, { status: 400 })
     }
 
-    // Verificar disponibilidad del horario para el empleado
-    const checkResult = await pool.query(`
+    // Verificar si ya existe una cita para este perro en el mismo horario
+    const checkPerroResult = await pool.query(`
+      SELECT 1 FROM cita 
+      WHERE fecha = $1 
+      AND horario_disponible = $2
+      AND id_perro_fk = $3
+    `, [body.fecha, body.horario_disponible, body.id_perro_fk])
+
+    // Si ya existe una cita para este perro en el mismo horario, devolver error
+    if (checkPerroResult.rows.length > 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'Horario ocupado',
+        details: 'El perro ya tiene una cita programada en este horario'
+      }, { status: 400 })
+    }
+
+    // Verificar si el empleado ya tiene una cita en este horario
+    const checkEmpleadoResult = await pool.query(`
       SELECT 1 FROM cita 
       WHERE fecha = $1 
       AND horario_disponible = $2
       AND id_empleado_fk = $3
     `, [body.fecha, body.horario_disponible, body.id_empleado_fk])
 
-    // Si el horario está ocupado para este empleado, verificar si es para el mismo perro
-    if (checkResult.rows.length > 0) {
-      const samePerroResult = await pool.query(`
-        SELECT 1 FROM cita 
-        WHERE fecha = $1 
-        AND horario_disponible = $2 
-        AND id_empleado_fk = $3
-        AND id_perro_fk = $4
-      `, [body.fecha, body.horario_disponible, body.id_empleado_fk, body.id_perro_fk])
-      
-      if (samePerroResult.rows.length === 0) {
-        // Si el horario está ocupado pero no para el mismo perro, permitir la cita
-        return NextResponse.json({
-          success: true,
-          message: 'Horario ocupado pero permitido para otro perro'
-        }, { status: 200 })
-      }
-    }
-
-    // Si el horario está ocupado, verificar si es para el mismo perro
-    if (checkResult.rows.length > 0) {
-      const samePerroResult = await pool.query(`
-        SELECT 1 FROM cita 
-        WHERE fecha = $1 
-        AND horario_disponible = $2 
-        AND id_perro_fk = $3
-      `, [body.fecha, body.horario_disponible, body.id_perro_fk])
-      
-      if (samePerroResult.rows.length === 0) {
-        // Si el horario está ocupado pero no para el mismo perro, permitir la cita
-        return NextResponse.json({
-          success: true,
-          message: 'Horario ocupado pero permitido para otro perro'
-        }, { status: 200 })
-      }
+    // Si el empleado ya tiene una cita en este horario, devolver error
+    if (checkEmpleadoResult.rows.length > 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'Horario ocupado',
+        details: 'El horario seleccionado ya está ocupado. Por favor, elija otro horario.'
+      }, { status: 400 })
     }
 
 

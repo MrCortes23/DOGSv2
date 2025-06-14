@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Calendar from 'react-calendar';
-import {formatISO}  from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface AgendarCitaProps {
@@ -86,8 +85,11 @@ export default function AgendarCita({ onSchedule, servicios, perros }: AgendarCi
     setLoading(true);
 
     try {
+      // Formatear la fecha a ISO string manualmente
+      const fechaISO = selectedDate.toISOString();
+      
       await onSchedule(
-        formatISO(selectedDate),
+        fechaISO,
         selectedTime,
         costo,
         observaciones,

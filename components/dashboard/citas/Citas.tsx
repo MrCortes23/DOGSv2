@@ -17,7 +17,7 @@ interface CitasProps {
     pagada: boolean;
     id_perro_fk: number;
   }>;
-  onSchedule: (fecha: string, horario: string, costo: number, observaciones: string, id_perro: number, id_empleado: number) => void;
+  onSchedule: (fecha: string, horario: string, costo: number, observaciones: string, id_perro: number, id_empleado: number) => Promise<void>;
   servicios: Array<{ id_servicio_pk: number; tipo_de_servicio: string; valor: number; id_costo_pk: number }>;
   perros: Array<{ id_perro_pk: number; nombre: string; tamano: string }>;
 }
