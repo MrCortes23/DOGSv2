@@ -74,6 +74,7 @@ export default function RegisterForm() {
                 type="text"
                 id="name"
                 value={name}
+                placeholder="Nombre y Apellido"
                 onChange={(e) => setName(e.target.value)}
                 className="w-full p-2 rounded border border-gray-300 text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors duration-200"
                 required
@@ -87,6 +88,7 @@ export default function RegisterForm() {
                 type="email"
                 id="email"
                 value={email}
+                placeholder="ejemplo@email.com"
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full p-2 rounded border border-gray-300 text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors duration-200"
                 required
@@ -100,6 +102,7 @@ export default function RegisterForm() {
                 type="tel"
                 id="phone"
                 value={phone}
+                placeholder="(123) 4567890"
                 onChange={(e) => setPhone(e.target.value)}
                 className="w-full p-2 rounded border border-gray-300 text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors duration-200"
                 required
