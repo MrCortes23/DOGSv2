@@ -1,4 +1,4 @@
-DOGS
+## DOGS
 
 DOGS es una aplicación web desarrollada con Next.js 15 orientada a la gestión integral de una guardería y hotel para mascotas. El sistema permite administrar usuarios, mascotas, citas, facturación y comunicación con clientes de manera centralizada, segura y escalable.
 
