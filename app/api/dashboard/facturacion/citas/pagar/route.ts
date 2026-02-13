@@ -11,10 +11,10 @@ export async function PUT(request: NextRequest) {
     const { ids, metodoPago } = await request.json()
     const pool = getPool()
 
-    // Verificar métodos de pago disponibles
-    const metodosDisponibles = await pool.query('SELECT tipo_metodo FROM metodo_de_pago');
-    console.log('Métodos de pago disponibles:', metodosDisponibles.rows);
-    console.log('Método de pago recibido:', metodoPago);
+    const clienteId = Number(userData.sub)
+    if (!clienteId) {
+      return requireAuth()
+    }
 
     // Insertar facturas para todas las citas seleccionadas
     for (const id of ids) {
@@ -24,7 +24,7 @@ export async function PUT(request: NextRequest) {
         FROM cita c
         JOIN perro p2 ON p2.id_perro_pk = c.id_perro_fk
         WHERE c.id_cita_pk = $1 AND p2.id_cliente_fk = $2
-      `, [id, userData.id]);
+      `, [id, clienteId]);
 
       if (citaResult.rows.length === 0) {
         throw new Error(`Cita con ID ${id} no encontrada o no pertenece al cliente`);
@@ -41,17 +41,12 @@ export async function PUT(request: NextRequest) {
         throw new Error(`Ya existe una factura para la cita con ID ${id}`);
       }
 
-      console.log('Cita encontrada:', citaResult.rows[0]);
-      
       // Obtener el id_pago_pk del método de pago seleccionado
       const metodoPagoResult = await pool.query(`
         SELECT id_pago_pk, tipo_metodo 
         FROM metodo_de_pago 
         WHERE LOWER(tipo_metodo) = LOWER($1)`,
         [metodoPago]);
-
-      console.log('Resultados de búsqueda:', metodoPagoResult.rows);
-      console.log('Valor buscado:', metodoPago);
 
       if (metodoPagoResult.rows.length === 0) {
         throw new Error(`Método de pago '${metodoPago}' no encontrado`);
@@ -78,8 +73,6 @@ export async function PUT(request: NextRequest) {
         SET estado = 'pagada'
         WHERE id_cita_pk = $1`,
         [id]);
-
-      console.log(`Factura creada y estado actualizado para cita ${id}`);
     }
 
     return NextResponse.json({

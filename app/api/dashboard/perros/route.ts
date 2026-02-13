@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { Pool } from 'pg'
 import { cookies } from 'next/headers'
+import { verifySession } from '@/lib/session'
 
 // Verificar si la base de datos está configurada
 if (!process.env.DATABASE_URL) {
@@ -16,20 +17,19 @@ const pool = new Pool({
 async function getUserDataFromCookie() {
   try {
     const allCookies = await cookies()
-    const userCookie = allCookies.get('user')
+    const tokenCookie = allCookies.get('token')
     
-    if (!userCookie) {
-      console.log('No se encontró cookie de usuario')
+    if (!tokenCookie?.value) {
       return null
     }
 
-    const userData = JSON.parse(decodeURIComponent(userCookie.value))
-    if (!userData || !userData.id) {
-      console.log('Usuario inválido:', userData)
+    const session = await verifySession(tokenCookie.value)
+    const id = Number(session.sub)
+    if (!id) {
       return null
     }
 
-    return userData
+    return { id }
   } catch (error) {
     console.error('Error al obtener datos de usuario:', error)
     return null
@@ -38,24 +38,18 @@ async function getUserDataFromCookie() {
 
 export async function GET() {
   try {
-    console.log('Iniciando petición GET...')
-    
     const userData = await getUserDataFromCookie()
     if (!userData) {
-      console.log('No hay datos de usuario en la cookie')
       return NextResponse.json({
         success: false,
         error: 'No hay sesión activa',
-        details: 'No se encontró cookie de usuario'
+        details: 'No se encontró token de sesión'
       }, { status: 401 })
     }
-
-    console.log('Usuario decodificado:', userData)
 
     // Verificar si la conexión a la base de datos está funcionando
     try {
       await pool.query('SELECT 1')
-      console.log('Conexión a la base de datos exitosa')
     } catch (dbError) {
       console.error('Error al conectar a la base de datos:', dbError)
       return NextResponse.json({

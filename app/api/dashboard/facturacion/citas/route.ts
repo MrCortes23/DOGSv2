@@ -8,7 +8,10 @@ export async function GET() {
       return requireAuth()
     }
 
-    console.log('Datos del usuario:', userData);
+    const clienteId = Number(userData.sub)
+    if (!clienteId) {
+      return requireAuth()
+    }
     const pool = getPool()
     const result = await pool.query(`
       SELECT 
@@ -29,9 +32,7 @@ export async function GET() {
       JOIN perro p ON c.id_perro_fk = p.id_perro_pk
       WHERE p.id_cliente_fk = $1
       ORDER BY c.fecha ASC
-    `, [userData.id]);
-
-    console.log('Resultado de la consulta:', result.rows);
+    `, [clienteId]);
     return NextResponse.json({
       success: true,
       data: result.rows
@@ -55,6 +56,11 @@ export async function PUT(request: NextRequest) {
     try {
       const userData = await checkAuth()
       if (!userData) {
+        return requireAuth()
+      }
+
+      const clienteId = Number(userData.sub)
+      if (!clienteId) {
         return requireAuth()
       }
 
@@ -82,7 +88,7 @@ export async function PUT(request: NextRequest) {
           UPDATE cita
           SET estado = 'pagada'
           WHERE id_cita_pk IN (SELECT id_cita_fk FROM inserted_factura)
-        `, [metodoPago, id, userData.id])
+        `, [metodoPago, id, clienteId])
       }
 
       return NextResponse.json({
@@ -104,6 +110,11 @@ export async function PUT(request: NextRequest) {
         return requireAuth()
       }
 
+      const clienteId = Number(userData.sub)
+      if (!clienteId) {
+        return requireAuth()
+      }
+
       const searchParams = new URLSearchParams(url.search)
       const citaId = parseInt(searchParams.get('id') || '')
 
@@ -122,7 +133,7 @@ export async function PUT(request: NextRequest) {
         WHERE f.id_cita_fk = $1 AND EXISTS (
           SELECT 1 FROM perro p2 WHERE p2.id_perro_fk = c.id_perro_fk AND p2.id_cliente_fk = $2
         )
-      `, [citaId, userData.id])
+      `, [citaId, clienteId])
 
       // Luego eliminamos la cita
       await pool.query(`
@@ -130,7 +141,7 @@ export async function PUT(request: NextRequest) {
         WHERE c.id_cita_pk = $1 AND EXISTS (
           SELECT 1 FROM perro p2 WHERE p2.id_perro_fk = c.id_perro_fk AND p2.id_cliente_fk = $2
         )
-      `, [citaId, userData.id])
+      `, [citaId, clienteId])
 
       return NextResponse.json({
         success: true,

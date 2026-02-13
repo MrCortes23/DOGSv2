@@ -1,9 +1,17 @@
-export function getUserDataFromCookie() {
+type UserData = {
+  id: number;
+  nombre: string;
+  correo: string;
+  telefono: string;
+  direccion: string;
+  rol: string;
+};
+
+export function getUserDataFromCookie(): UserData | null {
   const cookies = document.cookie.split('; ');
   const userCookie = cookies.find(cookie => cookie.startsWith('user='));
 
   if (!userCookie) {
-    console.log('No se encontró cookie de usuario');
     return null;
   }
 
@@ -21,14 +29,17 @@ export function getUserDataFromCookie() {
     };
 
     if (!normalizedUserData.id) {
-      console.log('Usuario inválido:', userData);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Usuario inválido');
+      }
       return null;
     }
 
-    console.log('Datos del usuario:', normalizedUserData);
     return normalizedUserData;
   } catch (error) {
-    console.error('Error al obtener datos de usuario:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Error al obtener datos de usuario:', error);
+    }
     return null;
   }
 }

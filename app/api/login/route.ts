@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { signSession } from '@/lib/session';
 
 export async function POST(request: Request) {
   try {
@@ -40,9 +41,6 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('Contraseña ingresada:', contrasena);
-    console.log('Hash almacenado:', sesion.rows[0].contrasena);
-
     // Verificar la contraseña usando una consulta directa
     const validPassword = await client.query(
       `SELECT contrasena = crypt($1, contrasena) AS is_valid 
@@ -50,8 +48,6 @@ export async function POST(request: Request) {
        WHERE id_sesion_pk = $2`,
       [contrasena, sesion.rows[0].id_sesion_pk]
     );
-    
-    console.log('Resultado de validación:', validPassword.rows[0]);
 
     if (!validPassword.rows[0]?.is_valid) {
       return NextResponse.json(
@@ -59,9 +55,6 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
-
-    // Crear un token de sesión
-    const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
 
     // Establecer cookies
     const userData = {
@@ -72,6 +65,13 @@ export async function POST(request: Request) {
       direccion: cliente.rows[0].direccion || '',
       rol: sesion.rows[0].rol
     };
+
+    const token = await signSession({
+      sub: String(userData.id),
+      role: String(userData.rol),
+      nombre: userData.nombre,
+      correo: userData.correo,
+    });
 
     const response = NextResponse.json({
       success: true,

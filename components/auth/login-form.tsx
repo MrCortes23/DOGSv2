@@ -34,9 +34,6 @@ export default function LoginForm() {
         return;
       }
 
-      // Establecer la cookie de usuario en el cliente
-      document.cookie = `user=${encodeURIComponent(JSON.stringify(data.user))}; path=/; max-age=${60 * 60 * 24 * 7}; secure=false; samesite=strict`;
-
       // Redirigir según el rol
       router.push(data.user.rol === 'administrador' ? '/admin' : '/dashboard');
     } catch (err) {

@@ -5,7 +5,9 @@ import nodemailer from 'nodemailer';
 
 export async function POST(request: Request) {
   try {
-    console.log('Iniciando proceso de restablecimiento de contraseña...');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Iniciando proceso de restablecimiento de contraseña...');
+    }
     const { email } = await request.json();
     
     if (!email) {
@@ -16,7 +18,9 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('Buscando usuario con email:', email);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Buscando usuario con email');
+    }
     
     // 1. Buscar usuario por email
     const client = await db.connect();
@@ -34,7 +38,6 @@ export async function POST(request: Request) {
     // Por seguridad, no revelar si el correo existe
     if (userRes.rows.length === 0) {
       client.release();
-      console.log('No se encontró usuario con el correo:', email);
       return NextResponse.json(
         { success: true, message: 'Si el correo existe, recibirás un enlace para restablecer tu contraseña' },
         { status: 200 }
@@ -72,7 +75,9 @@ export async function POST(request: Request) {
       throw new Error('Configuración de correo incompleta');
     }
 
-    console.log('Configurando transporte de correo...');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Configurando transporte de correo...');
+    }
     const transporter = nodemailer.createTransport({
       service: 'Gmail',
       auth: {
@@ -82,7 +87,6 @@ export async function POST(request: Request) {
     });
 
     try {
-      console.log('Enviando correo a:', email);
       await transporter.sendMail({
         from: `"${process.env.EMAIL_FROM_NAME || 'Soporte'}" <${process.env.EMAIL_USER}>`,
         to: email,
@@ -118,8 +122,6 @@ export async function POST(request: Request) {
           </div>
         `,
       });
-
-      console.log('Correo de restablecimiento enviado con éxito');
       return NextResponse.json({
         success: true,
         message: 'Si el correo existe, recibirás un enlace para restablecer tu contraseña',

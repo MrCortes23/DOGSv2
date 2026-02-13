@@ -8,6 +8,11 @@ export async function PUT(request: NextRequest) {
       return requireAuth()
     }
 
+    const clienteId = Number(userData.sub)
+    if (!clienteId) {
+      return requireAuth()
+    }
+
     const { searchParams } = new URL(request.url)
     const citaId = parseInt(searchParams.get('id') || '')
 
@@ -33,7 +38,7 @@ export async function PUT(request: NextRequest) {
       AND EXISTS (
         SELECT 1 FROM perro p WHERE p.id_perro_pk = c.id_perro_fk AND p.id_cliente_fk = $2
       )
-    `, [citaId, userData.id])
+    `, [citaId, clienteId])
 
     return NextResponse.json({
       success: true,

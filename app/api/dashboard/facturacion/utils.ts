@@ -1,28 +1,22 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { Pool } from 'pg';
+import { verifySession } from '@/lib/session';
 
 let pool: Pool | null = null;
 
 export async function checkAuth() {
   try {
     const allCookies = await cookies();
-    const userCookie = allCookies.get('user');
+    const tokenCookie = allCookies.get('token');
     
-    if (!userCookie) {
-      console.log('No se encontró cookie de usuario');
+    if (!tokenCookie?.value) {
       return null;
     }
 
-    const userData = JSON.parse(decodeURIComponent(userCookie.value));
-    if (!userData || !userData.id) {
-      console.log('Usuario inválido:', userData);
-      return null;
-    }
-
-    return userData;
-  } catch (error) {
-    console.error('Error al obtener datos de usuario:', error);
+    const session = await verifySession(tokenCookie.value);
+    return session;
+  } catch {
     return null;
   }
 }
@@ -31,7 +25,7 @@ export function requireAuth() {
   return NextResponse.json({
     success: false,
     error: 'No hay sesión activa',
-    details: 'No se encontró cookie de usuario'
+    details: 'No se encontró token de sesión'
   }, { status: 401 });
 }
 

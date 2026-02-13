@@ -51,7 +51,6 @@ export async function GET() {
       ORDER BY c.nombre`;
 
     const result = await pool.query(query);
-    console.log('Resultado de la consulta SQL:', JSON.stringify(result.rows, null, 2));
     return NextResponse.json(result.rows);
   } catch (error) {
     console.error('Error fetching clientes:', error);
@@ -63,15 +62,12 @@ export async function GET() {
 }
 
 export async function DELETE(request: Request) {
-  console.log('Iniciando solicitud DELETE para cliente');
   const client = await pool.connect();
   
   try {
     const body = await request.json();
-    console.log('Cuerpo de la solicitud:', JSON.stringify(body, null, 2));
     
     const { id } = body;
-    console.log('ID recibido:', id, 'Tipo:', typeof id);
     
     // Validar que el ID sea un número o un string numérico
     if (id === undefined || id === null || (isNaN(Number(id)) && !id.toString().startsWith('temp-'))) {
@@ -84,7 +80,6 @@ export async function DELETE(request: Request) {
 
     // Si es un ID temporal, no hacemos nada en la base de datos
     if (id.toString().startsWith('temp-')) {
-      console.log('ID temporal detectado, omitiendo eliminación en BD');
       return NextResponse.json({ message: 'Cliente temporal eliminado' });
     }
     
@@ -101,103 +96,80 @@ export async function DELETE(request: Request) {
     }
     
     // Iniciar una transacción
-    console.log('Iniciando transacción...');
     await client.query('BEGIN');
     
     try {
       // 1. Eliminar registros de inicio_de_sesion relacionados
-      console.log('Eliminando registros de inicio de sesión...');
       const sesionesResult = await client.query(
         'DELETE FROM inicio_de_sesion WHERE id_cliente_fk = $1 RETURNING *',
         [id]
       );
-      console.log(`Registros de inicio de sesión eliminados: ${sesionesResult.rowCount}`);
       
       // 2. Obtener IDs de perros del cliente
-      console.log('Obteniendo perros del cliente...');
       const perros = await client.query(
         'SELECT id_perro_pk FROM perro WHERE id_cliente_fk = $1',
         [id]
       );
       const idsPerros = perros.rows.map(p => p.id_perro_pk);
-      console.log(`Perros encontrados: ${idsPerros.length}`);
       
       if (idsPerros.length > 0) {
         // 3. Eliminar servicios de citas (cita_servicio) para los perros del cliente
-        console.log('Eliminando servicios de citas...');
-        const serviciosCitasResult = await client.query(
+        await client.query(
           `DELETE FROM cita_servicio 
            WHERE id_cita_fk IN (
              SELECT id_cita_pk FROM cita WHERE id_perro_fk = ANY($1::int[])
            ) RETURNING *`,
           [idsPerros]
         );
-        console.log(`Servicios de citas eliminados: ${serviciosCitasResult.rowCount}`);
         
         // 4. Eliminar facturas de los perros del cliente
-        console.log('Eliminando facturas...');
-        const facturasResult = await client.query(
+        await client.query(
           `DELETE FROM factura 
            WHERE id_cita_fk IN (
              SELECT id_cita_pk FROM cita WHERE id_perro_fk = ANY($1::int[])
            ) RETURNING *`,
           [idsPerros]
         );
-        console.log(`Facturas eliminadas: ${facturasResult.rowCount}`);
         
         // 5. Eliminar citas de los perros
-        console.log('Eliminando citas...');
-        const citasResult = await client.query(
+        await client.query(
           'DELETE FROM cita WHERE id_perro_fk = ANY($1::int[]) RETURNING *',
           [idsPerros]
         );
-        console.log(`Citas eliminadas: ${citasResult.rowCount}`);
         
         // 6. Eliminar relaciones de perros con razas
-        console.log('Eliminando relaciones de perros con razas...');
-        const razasResult = await client.query(
+        await client.query(
           'DELETE FROM perro_raza WHERE id_perro_fk = ANY($1::int[]) RETURNING *',
           [idsPerros]
         );
-        console.log(`Relaciones de razas eliminadas: ${razasResult.rowCount}`);
         
         // 7. Eliminar relaciones de perros con enfermedades
-        console.log('Eliminando relaciones de perros con enfermedades...');
-        const enfermedadesResult = await client.query(
+        await client.query(
           'DELETE FROM perro_enfermedad WHERE id_perro_fk = ANY($1::int[]) RETURNING *',
           [idsPerros]
         );
-        console.log(`Relaciones de enfermedades eliminadas: ${enfermedadesResult.rowCount}`);
         
         // 8. Eliminar los perros del cliente
-        console.log('Eliminando perros...');
-        const perrosResult = await client.query(
+        await client.query(
           'DELETE FROM perro WHERE id_cliente_fk = $1 RETURNING *',
           [id]
         );
-        console.log(`Perros eliminados: ${perrosResult.rowCount}`);
-      } else {
-        console.log('El cliente no tiene perros registrados');
       }
       
       // 9. Finalmente, eliminar el cliente
-      console.log('Eliminando cliente...');
       const clienteResult = await client.query(
         'DELETE FROM cliente WHERE id_cliente_pk = $1 RETURNING *',
         [id]
       );
       
       const rowsDeleted = clienteResult.rowCount || 0;
-      console.log(`Cliente eliminado: ${rowsDeleted > 0 ? 'Sí' : 'No'}`);
       
       if (rowsDeleted === 0) {
         throw new Error('No se encontró el cliente para eliminar');
       }
       
       // Si todo salió bien, hacer commit
-      console.log('Haciendo commit de la transacción...');
       await client.query('COMMIT');
-      console.log('Transacción completada con éxito');
       
       return NextResponse.json({ 
         success: true,

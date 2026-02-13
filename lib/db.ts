@@ -1,18 +1,29 @@
 import { Pool } from "pg"
 
+const shouldUseSsl =
+  process.env.DATABASE_SSL === "true" || process.env.NODE_ENV === "production";
+
+const ssl = shouldUseSsl
+  ? {
+      rejectUnauthorized: process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === "true",
+    }
+  : undefined;
+
 const db = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  ssl,
 })
 
 // Función para probar la conexión
 export async function testConnection() {
   try {
-    console.log('Intentando conectar a la base de datos...');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Intentando conectar a la base de datos...');
+    }
     const client = await db.connect();
-    console.log('Conexión establecida correctamente');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Conexión establecida correctamente');
+    }
     client.release();
     return true;
   } catch (error) {

@@ -62,6 +62,7 @@ export default function DiagonalSection() {
       if (element) {
         observer.unobserve(element)
       }
+      observer.disconnect()
     }
   }, [])
 
@@ -72,7 +73,7 @@ export default function DiagonalSection() {
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden hover:shadow-3xl transition-all duration-500 w-full">
             <div className="grid lg:grid-cols-2 min-h-[600px] w-full">
               {/* Lado izquierdo - Imagen */}
-              <div className="relative overflow-hidden bg-gray-100">
+              <div className="relative overflow-hidden bg-gray-100 diagonal-clip">
                 <div className="absolute inset-0 p-8 md:p-10 flex items-center justify-center">
                   <motion.div 
                     className="w-full h-full max-w-[90%] max-h-[90%] relative flex items-center justify-center"

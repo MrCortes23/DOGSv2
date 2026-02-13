@@ -1,17 +1,9 @@
 import { NextResponse } from 'next/server'
-import { Pool } from 'pg'
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
-})
+import { db } from '@/lib/db'
+import { verifySession } from '@/lib/session'
 
 export async function GET(request: Request) {
   try {
-    console.log('Iniciando petición GET...')
-    
     const cookies = request.headers.get('cookie')
     if (!cookies) {
       return NextResponse.json({
@@ -21,34 +13,33 @@ export async function GET(request: Request) {
       }, { status: 401 })
     }
 
-    // Extract the user cookie value
-    const userCookieMatch = cookies.match(/user=([^;]+)/)
-    if (!userCookieMatch) {
+    const tokenCookieMatch = cookies.match(/token=([^;]+)/)
+    if (!tokenCookieMatch) {
       return NextResponse.json({
         success: false,
         error: 'No hay sesión activa',
-        details: 'Cookie de usuario no encontrada'
+        details: 'Token de sesión no encontrado'
       }, { status: 401 })
     }
 
-    // Decode and parse the user data
-    const userData = JSON.parse(decodeURIComponent(userCookieMatch[1]))
-    console.log('Usuario decodificado:', userData)
+    const session = await verifySession(decodeURIComponent(tokenCookieMatch[1]))
+    const userEmail = session.correo
 
-    const userEmail = userData.correo
-    console.log('Correo del usuario:', userEmail)
+    if (!userEmail) {
+      return NextResponse.json({
+        success: false,
+        error: 'No hay sesión activa',
+        details: 'Sesión inválida'
+      }, { status: 401 })
+    }
 
     // Verificar si el usuario existe
-    console.log('Verificando usuario en la base de datos...')
-    const userQuery = await pool.query(
+    const userQuery = await db.query(
       'SELECT * FROM inicio_de_sesion WHERE correo = $1',
       [userEmail]
     )
 
-    console.log('Resultado de la consulta de usuario:', userQuery.rows)
-
     if (userQuery.rows.length === 0) {
-      console.log('Usuario no encontrado en la base de datos')
       return NextResponse.json({ 
         success: false,
         error: 'Usuario no encontrado',
@@ -57,16 +48,12 @@ export async function GET(request: Request) {
     }
 
     // Obtener el ID del cliente usando el correo
-    console.log('Obteniendo ID del cliente...')
-    const clienteRes = await pool.query(
+    const clienteRes = await db.query(
       'SELECT id_cliente_pk FROM cliente WHERE correo = $1',
       [userEmail]
     )
 
-    console.log('Resultado de la consulta de cliente:', clienteRes.rows)
-
     if (clienteRes.rows.length === 0) {
-      console.log('Cliente no encontrado en la base de datos')
       return NextResponse.json({ 
         success: false,
         error: 'Cliente no encontrado',
@@ -75,11 +62,9 @@ export async function GET(request: Request) {
     }
 
     const clienteId = clienteRes.rows[0].id_cliente_pk
-    console.log('ID del cliente encontrado:', clienteId)
 
     // Obtener los perros del cliente
-    console.log('Obteniendo perros del cliente...')
-    const perrosRes = await pool.query(
+    const perrosRes = await db.query(
       `
         SELECT 
           p.id_perro_pk,
@@ -95,11 +80,8 @@ export async function GET(request: Request) {
       [clienteId]
     )
 
-    console.log('Perros encontrados:', perrosRes.rows)
-
     // Obtener las citas del cliente
-    console.log('Obteniendo citas del cliente...')
-    const citasRes = await pool.query(
+    const citasRes = await db.query(
       `
         SELECT 
           c.id_cita_pk,
@@ -120,8 +102,6 @@ export async function GET(request: Request) {
       [clienteId]
     )
 
-    console.log('Citas encontradas:', citasRes.rows)
-
     return NextResponse.json({
       success: true,
       perros: perrosRes.rows,
@@ -132,8 +112,6 @@ export async function GET(request: Request) {
       }))
     })
   } catch (error) {
-    console.error('Error completo:', error)
-    
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
     
     return NextResponse.json({

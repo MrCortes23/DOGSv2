@@ -269,18 +269,18 @@ export default function SimpleHeroCarousel({ slides }: SimpleHeroCarouselProps) 
       </div>
 
       {/* Información de contacto */}
-      <div className="absolute top-6 right-6 bg-white/15 backdrop-blur-md rounded-xl p-3 lg:p-4 text-white border border-white/20 hidden md:block">
+      <div className="absolute top-6 right-6 bg-black/15 backdrop-blur-md rounded-xl p-3 lg:p-4 text-white border border-white/20 hidden md:block">
         <div className="flex flex-col gap-2 text-xs lg:text-sm">
           <div className="flex items-center gap-2">
-            <Phone className="w-3 h-3 lg:w-4 lg:h-4 text-black" />
+            <Phone className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
               <span>(301) 8268642</span>
             </div>
           <div className="flex items-center gap-2">
-            <MapPin className="w-3 h-3 lg:w-4 lg:h-4 text-black" />
+            <MapPin className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
             <span>Calle 27 #5-142</span>
           </div>
           <div className="flex items-center gap-2">
-            <Clock className="w-3 h-3 lg:w-4 lg:h-4 text-black" />
+            <Clock className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
             <span>7AM - 6PM</span>
           </div>
         </div>
