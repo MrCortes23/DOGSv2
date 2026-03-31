@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
+type PerroIdRow = {
+  id_perro_pk: number;
+};
+
 export async function GET() {
   try {
     // Obtener clientes con sus perros y citas
@@ -106,11 +110,11 @@ export async function DELETE(request: Request) {
       );
       
       // 2. Obtener IDs de perros del cliente
-      const perros = await client.query(
+      const perros = await client.query<PerroIdRow>(
         'SELECT id_perro_pk FROM perro WHERE id_cliente_fk = $1',
         [id]
       );
-      const idsPerros = perros.rows.map(p => p.id_perro_pk);
+      const idsPerros = perros.rows.map((p) => p.id_perro_pk);
       
       if (idsPerros.length > 0) {
         // 3. Eliminar servicios de citas (cita_servicio) para los perros del cliente
