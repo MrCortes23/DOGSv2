@@ -17,7 +17,7 @@ const RazasTab = dynamic(() => import('@/components/admin/RazasTab'), { ssr: fal
 const EnfermedadesTab = dynamic(() => import('@/components/admin/EnfermedadesTab'), { ssr: false });
 
 interface UserData {
-  id: string;
+  id: number;
   nombre: string;
   correo: string;
   telefono: string;

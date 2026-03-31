@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Calendar from 'react-calendar';
-import { es } from 'date-fns/locale';
 
 interface AgendarCitaProps {
   onSchedule: (fecha: string, horario: string, costo: number, observaciones: string, id_perro: number, id_empleado: number) => void;
@@ -126,7 +125,7 @@ export default function AgendarCita({ onSchedule, servicios, perros }: AgendarCi
           <Calendar
             onChange={(value) => handleDateSelect(value instanceof Date ? value : null)}
             value={selectedDate}
-            locale={es}
+            locale="es-ES"
             className="react-calendar"
             tileClassName={(args: { date: Date }) => {
               const { date } = args;

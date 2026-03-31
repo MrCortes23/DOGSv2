@@ -1,4 +1,5 @@
 // app/reset-password/page.tsx
+import { Suspense } from 'react';
 import { ResetPasswordForm } from '@/components/auth/reset-password-form';
 
 export const metadata = {
@@ -15,7 +16,9 @@ export default function ResetPasswordPage() {
           <h1 className="text-3xl font-bold text-gray-900">Guardería Canina DOGS</h1>
           <p className="mt-2 text-sm text-gray-600">Restablece tu contraseña</p>
         </div>
-        <ResetPasswordForm />
+        <Suspense fallback={<div className="flex flex-col items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-4"></div><p>Verificando enlace...</p></div>}>
+          <ResetPasswordForm />
+        </Suspense>
       </div>
     </main>
   );
