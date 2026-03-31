@@ -114,7 +114,7 @@ export async function DELETE(request: Request) {
         'SELECT id_perro_pk FROM perro WHERE id_cliente_fk = $1',
         [id]
       );
-      const idsPerros = perros.rows.map((p) => p.id_perro_pk);
+      const idsPerros = perros.rows.map((p: { id_perro_pk: number }) => p.id_perro_pk);
       
       if (idsPerros.length > 0) {
         // 3. Eliminar servicios de citas (cita_servicio) para los perros del cliente
